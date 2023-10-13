@@ -40,13 +40,13 @@ pub struct Othello {
     cell_white: G2dTexture,
     cell_blue: G2dTexture,
     cell_yellow: G2dTexture,
-    black: G2dTexture,
-    white: G2dTexture,
-    cnt: usize
+    piece_black: G2dTexture,
+    piece_white: G2dTexture,
+    cnt: [isize; 2]
 }
 
 impl Othello {
-    pub fn new(player: Cell, (cell_white, cell_blue, cell_yellow, black, white): (G2dTexture, G2dTexture, G2dTexture, G2dTexture, G2dTexture)) -> Self {
+    pub fn new(player: Cell, (cell_white, cell_blue, cell_yellow, piece_black, piece_white): (G2dTexture, G2dTexture, G2dTexture, G2dTexture, G2dTexture)) -> Self {
         let mut board = [[Cell::EMPTY; 8]; 8];
         board[3][3] = Cell::BLACK; board[4][4] = Cell::BLACK;
         board[3][4] = Cell::WHITE; board[4][3] = Cell::WHITE;
@@ -61,14 +61,14 @@ impl Othello {
             cell_white,
             cell_blue,
             cell_yellow,
-            black,
-            white,
-            cnt: 60
+            piece_black,
+            piece_white,
+            cnt: [2; 2]
         };
     }
 
     pub fn draw(&mut self, c: Context, g: &mut G2d) {
-        // self.check();
+        self.check();
         // let mut text = writeln_text(
         //     &format!("{}の\nターンです", if self.turn == self.player {"あなた"} else {"コンピュータ"}),
         // )
@@ -84,6 +84,8 @@ impl Othello {
 
         // let a = Text::new(16);
         // a.draw_pos(&text, [30.0, 200.0], &mut c, draw_state, transform, g);
+
+        
 
         let start_pos = (120.0, 40.0);
         for y in 0..8 {
@@ -125,7 +127,7 @@ impl Othello {
                 match self.board[y][x] {
                     Cell::BLACK => {
                         image(
-                            &self.black,
+                            &self.piece_black,
                             c
                                 .transform
                                 .trans(
@@ -137,7 +139,7 @@ impl Othello {
                     },
                     Cell::WHITE => {
                         image(
-                            &self.white,
+                            &self.piece_white,
                             c
                                 .transform
                                 .trans(
@@ -213,6 +215,7 @@ impl Othello {
         if !self.in_board(self.select, (0, 0)) { return; }
         let (y, x) = self.select;
         if self.checked[y][x].is_empty() { return; }
+        self.cnt[if self.turn == Cell::BLACK {0} else {1}] += 1;
         self.board[y][x] = self.turn;
         for (cnt, ddy, ddx, rev) in self.checked[y][x].clone() {
             for i in 1..cnt {
@@ -221,11 +224,13 @@ impl Othello {
                 } else {
                     self.board[(y as isize - (ddy * i as isize)) as usize][(x as isize - (ddx * i as isize)) as usize] = self.turn;
                 }
+                self.cnt[if self.turn == Cell::BLACK {0} else {1}] += 1;
+                self.cnt[if self.turn == Cell::BLACK {1} else {0}] -= 1;
             }
         }
         self.turn_change();
         self.pre = self.select;
-        self.cnt -= 1;
+        println!("(黒, 白): {:?}", self.cnt);
     }
 
     pub fn put_greedy(&mut self) {
